@@ -84,13 +84,6 @@ final class ShowArticleRequest extends Request
 }
 ```
 
-| Method                 | Description                                                                                                                                         |
-|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| `resourceId()`         | Returns the resource id, which should be taken from the URL, for example.                                                                           |
-| `resourceType()`       | Returns the resource type that defines the [ResourceResolver](#ResourceResolver)                                                                    |
-| `acceptableIncludes()` | Returns a list of acceptable relationship names to include                                                                                          |
-| `toQuery()`            | Returns the [SingleDocumentQuery](/src/Query/SingleDocumentQuery.php) object that can be handled by [SingleDocumentBuilder](#SingleDocumentBuilder) |
-
 ### DocumentsRequest
 
 ```php
@@ -115,48 +108,10 @@ final class ListArticlesRequest extends Request
 
     protected function acceptableFilters(): array
     {
-        return [
-            'author_id' => ['eq'],
-            'title' => ['eq', 'like'],
-        ];
+        return ['author_id' => ['eq'], 'title' => ['eq', 'like']];
     }
 }
 ```
-
-| Method                 | Description                                                                                                                     |
-|------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `resourceType()`       | Returns the resource type that defines the [ResourceResolver](#ResourceResolver)                                                |
-| `acceptableIncludes()` | Returns a list of acceptable relationship names to include                                                                      |
-| `acceptableSorting()`  | Returns a list of acceptable rows for sorting                                                                                   |
-| `acceptableFilters()`  | Returns a list of acceptable filters that can be applied to resource collection                                                 |
-| `toQuery()`            | Returns the [DocumentsQuery](/src/Query/DocumentsQuery.php) object that can be handled by [DocumentsBuilder](#DocumentsBuilder) |
-
-## Builder
-
-To initialize [Builder](/src/Builder/Builder.php), you need to provide instances of [ResourceResolverFactory](#Factory) and [ResourceCache](#ResourceCache):
-
-| Method                                                             | Description                                         |
-|--------------------------------------------------------------------|-----------------------------------------------------|
-| `buildIncludes(Includes $includes, ResourceCollection $resources)` | Returns the included collection of resource objects |
-
-### SingleDocumentBuilder
-
-The [SingleDocumentBuilder](/src/Builder/SingleDocumentBuilder.php) extends `Builder`:
-
-| Method                              | Description                                       |
-|-------------------------------------|---------------------------------------------------|
-| `build(SingleDocumentQuery $query)` | Returns a document with single top-level resource |
-
-
-### DocumentsBuilder
-
-The [DocumentsBuilder](/src/Builder/DocumentsBuilder.php) extends `Builder`:
-
-| Method                         | Description                                 |
-|--------------------------------|---------------------------------------------|
-| `build(DocumentsQuery $query)` | Returns a document with top-level resources |
-
-## Resolver
 
 ### Factory
 
@@ -189,15 +144,11 @@ $factory->add(
     'comments',
     new CommentResourceResolver()
 );
-
-$builder = new SingleDocumentBuilder($factory, new InMemoryResourceCache());
-
-$singleDocument = $builder->build($request->toQuery());
 ```
 
 ### ResourceResolver
- 
-The builder use instances of [ResourceResolver](/src/Resolver/ResourceResolver.php) to find resources by ids or query criteria. 
+
+The builder use instances of [ResourceResolver](/src/Resolver/ResourceResolver.php) to find resources by ids or query criteria.
 
 ```php
 interface ResourceResolver
@@ -222,44 +173,6 @@ interface ResourceResolver
      * @return ResourceObject[]|PromiseInterface
      */
     public function resolveByIds(string ...$resourceIds): array|PromiseInterface;
-}
-```
-
-When resolving a collection of top-level resources, it will provide a query criteria consisting of filters, orders, pagination.
-You need to match criteria with your query builder (Doctrine, Eloquent, etc.).
-
-The builder can accept Guzzle Promises when trying to include related resources and load them async.
-
-### PaginationResolver
-
-```php
-interface PaginationResolver
-{
-    /**
-     * @param DocumentsQuery $query
-     *
-     * @return PaginationResponse
-     */
-    public function paginate(DocumentsQuery $query): PaginationResponse;
-}
-```
-
-If the resource resolver implements [PaginationResolver](/src/Resolver/PaginationResolver.php), the builder will add top-level `Links` and `Meta` objects to the resulting document.
-
-```
-{
-  "links": {
-    "first": "http://localhost/api/v1/articles?page=1&per_page=15",
-    "prev": "http://localhost/api/v1/articles?page=1&per_page=15",
-    "next": "http://localhost/api/v1/articles?page=2&per_page=15",
-    "last": "http://localhost/api/v1/articles?page=3&per_page=15",
-  },
-  "meta": {
-    "total": 45,
-    "page": 1,
-    "per_page": 15,
-    "last_page": 3
-  }
 }
 ```
 
@@ -324,6 +237,59 @@ interface ResourceCache
 ```
 There is a basic implementation [InMemoryResourceCache](/src/Cache/InMemoryResourceCache.php).
 If you don't need caching, use [NullableResourceCache](/src/Cache/NullableResourceCache.php).
+### SingleDocumentBuilder
+
+```php
+$builder = new SingleDocumentBuilder($factory, new InMemoryResourceCache());
+
+$singleDocument = $builder->build($request->toQuery());
+```
+### DocumentsBuilder
+
+```php
+$builder = new DocumentsBuilder($factory, new InMemoryResourceCache());
+
+$documents = $builder->build($request->toQuery());
+```
+
+
+When resolving a collection of top-level resources, it will provide a query criteria consisting of filters, orders, pagination.
+You need to match criteria with your query builder (Doctrine, Eloquent, etc.).
+
+The builder can accept Guzzle Promises when trying to include related resources and load them async.
+
+### PaginationResolver
+
+```php
+interface PaginationResolver
+{
+    /**
+     * @param DocumentsQuery $query
+     *
+     * @return PaginationResponse
+     */
+    public function paginate(DocumentsQuery $query): PaginationResponse;
+}
+```
+
+If the resource resolver implements [PaginationResolver](/src/Resolver/PaginationResolver.php), the builder will add top-level `Links` and `Meta` objects to the resulting document.
+
+```
+{
+  "links": {
+    "first": "http://localhost/api/v1/articles?page=1&per_page=15",
+    "prev": "http://localhost/api/v1/articles?page=1&per_page=15",
+    "next": "http://localhost/api/v1/articles?page=2&per_page=15",
+    "last": "http://localhost/api/v1/articles?page=3&per_page=15",
+  },
+  "meta": {
+    "total": 45,
+    "page": 1,
+    "per_page": 15,
+    "last_page": 3
+  }
+}
+```
 
 ## License
 The MIT License (MIT). Please see [LICENSE](LICENSE) for more information.
